@@ -1,3 +1,5 @@
+#NOTE: Average option does NOT work as of yet, please do not enable
+
 import os, sys, time, csv, getopt, re, operator #for sort
 from datetime import datetime
 
@@ -114,14 +116,6 @@ for filename in filenames:
 			if ((i + 1) % 3 == 0):
 				match = re.search('(?<=_).*?(?=_GREPPED)', filename) #regex, match the expression between "_" and "GREPPED"
 				                                                     #in the filename string
-				#testMatch = re.search('(?<=_).*?(?=_[0-9]+_GREPPED)', filename) #regex, match the expression between "_" and "_#_GREPPED"
-				#trialMatch = re.search('(?<=_[0-9]+_).*?(?=_GREPPED)', filename) #regex, match the expression between "DataSet_#_" and "_GREPPED"
-
-				#See: http://stackoverflow.com/questions/6109882/regex-match-all-characters-between-two-strings
-				#https://docs.python.org/2/library/re.html --> Explaination on match.group(0) --> (group0() returns the ENTIRE matched pattern)
-				#http://pythex.org/?regex=(%3F%3C%3D_).*%3F(%3F%3DGREPPED)&test_string=results%2F2DataSet_9GREPPED.csv&ignorecase=0&multiline=0&dotall=0&verbose=0
-				#if match:
-				#	print(match.group(0))
 
 				numbers = match.group(0).split("_")
                                 n2 = numbers[0].split("/")
@@ -132,46 +126,13 @@ for filename in filenames:
 				#note: newRow[0-2] are comprised of three entries each, [] is placed around numbers to make it into a row object
                                 finalRow = newRow0 + newRow1 + newRow2 + [n2[1]] + [numbers[1]]
 
-
-				#finalRow[9] = finalRow[9].replace("_", "")
-
-				#print(finalRow)
 				log.append(finalRow)
 			i += 1
 
-			#if i % 3 == 0:
-			#	newRow1 = row
-				#print(newRow1)
-				#print("1")
-			#elif i % 3 == 1:
-			#	newRow2 = row
-				#print(newRow2)
-				#print("2")
-			#else:
-			#	newRow2 = newRow1 + newRow2 + row
-			#	print(newRow2)
-				#print("3")
-			#i += 1
-			# http://stackoverflow.com/questions/24861673/merge-two-rows-in-a-csv-file-in-python
-			#log = row + 1
-			#print(log)
-			#row += 2
-		#data = list(reader)
-    	#row_count = len(data)
-    	#if (row_count < 3):
-    	#	print("CSV file " + filename + " does not have at least 3 rows.\n")
-    	#	sys.exit(2)
-    	#for row in reader:
-			#log = (row + 2) + (row + 1) + row
-		#	log = row
-		#	print(log)
-		#	row += 2
 
 output = OPTIONS["output"] + "." + OPTIONS["extension"].lower()
-#output = OPTIONS["extension"].lower()
 
 allTruncRows = []
-#with open(OPTIONS["output"], "w") as file:
 with open(output, "w") as file:
 	writer = csv.writer(file)
 	for entry in log:                                       # Original: [2], [5], [8], [9]
@@ -190,9 +151,9 @@ with open(output, "w") as file:
 	if averageResults is False:
 		sys.exit(0)
 	
-        print (allTruncRows)
-        list1 = sorted(allTruncRows, key=operator.itemgetter(3,4))
-        print (list1)
+        #print (allTruncRows)
+        #list1 = sorted(allTruncRows, key=operator.itemgetter(3,4))
+        #print (list1)
 	#continue on with logic for when we're averaging the results
 	counter = 1
 	summedRow = [int(allTruncRows[0][0]), int(allTruncRows[0][1]), int(allTruncRows[0][2]), int(allTruncRows[0][3])]
@@ -217,18 +178,3 @@ with open(output, "w") as file:
 		writer.writerow(summedRow)
 	else: #the last row was a separate test from the second to last row; and thus that last test had only one trial
 		writer.writerow(summedRow)
-
-			
-
-	#writer = csv.DictWriter(file, ["sender", "date", "text"], quoting = csv.QUOTE_ALL)
-	#for message in messageLog:
-	#	writer.writerow(message.dict()) + message.text + '"'))
-
-
-
-#for filename in os.listdir(directory):
-#    if filename.endswith(".asm") or filename.endswith(".py"): 
-#        # print(os.path.join(directory, filename))
-#        continue
-#    else:
-#        continue
