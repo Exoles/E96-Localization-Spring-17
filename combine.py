@@ -108,56 +108,74 @@ for filename in filenames:
 			#Keep a consistent ordering of cells/AP nodes within a row
 			#To-do: Handle error cases if there are not exactly 3 rows in the file (e.g. data set 1 #30)
 			if (row[0] == "278020541036329"):
-				newRow1 = row
+                            newRow1 = row
 			elif (row[0] == "159113607448223"):
-				newRow0 = row
+                            newRow0 = row
 			elif (row[0] == "159113606651491"):
-				newRow2 = row
-			if ((i + 1) % 3 == 0):
-				match = re.search('(?<=_).*?(?=_GREPPED)', filename) #regex, match the expression between "_" and "GREPPED"
-				                                                     #in the filename string
+                            newRow2 = row
+                        else: #the row with the output
+                            newRow3 = row
+                        
+                        #If there are more than 4 rows in this file, ignore them
+			if ((i + 1) % 4 == 0): #used to be (... %3 == 0)
+			    match = re.search('(?<=_).*?(?=_GREPPED)', filename) #regex, match the expression between "_" and "GREPPED"
+				                                                 #in the filename string
 
-				numbers = match.group(0).split("_")
-                                n2 = numbers[0].split("/")
+			    numbers = match.group(0).split("_")
+                            n2 = numbers[0].split("/")
                     
-				#finalRow = newRow0 + newRow1 + newRow2 + [match.group(0)] 
-				#****finalRow = newRow0 + newRow1 + newRow2 + [numbers[0]] + [numbers[1]]
-				                                         #test number    #trial number (a single test has multiple trials averaged together) 
-				#note: newRow[0-2] are comprised of three entries each, [] is placed around numbers to make it into a row object
-                                finalRow = newRow0 + newRow1 + newRow2 + [n2[1]] + [numbers[1]]
+			    #finalRow = newRow0 + newRow1 + newRow2 + [match.group(0)] 
+			    #****finalRow = newRow0 + newRow1 + newRow2 + [numbers[0]] + [numbers[1]]
+				                                           #test number    #trial number (a single test has multiple trials averaged together) 
+			    #note: newRow[0-2] are comprised of three entries each, [] is placed around numbers to make it into a row object
+                            finalRow = newRow0 + newRow1 + newRow2 + [n2[1]] + [numbers[1]] + newRow3
 
-				log.append(finalRow)
+			    log.append(finalRow)
 			i += 1
 
 
 output = OPTIONS["output"] + "." + OPTIONS["extension"].lower()
 
 allTruncRows = []
+allResultsRows = []
 with open(output, "w") as file:
 	writer = csv.writer(file)
 	for entry in log:                                       # Original: [2], [5], [8], [9]
-		truncRow = [entry[1], entry[4], entry[7], entry[9], entry[10]] #change to [1], [4], [7] to get signal level instead of RSSI (quality)
-		                                                    #this data is in the format of one of the GREPPED files, with everything in a single
-		                                                    #row (instead of displayed over three rows), with an additional column appended for the
-		                                                    #test number
-		                                                    #Thus, an entry looks like the following:
-		                                                    #15...223, -x dBm, x/70 RSSI, 278..., -x dBm, x/70 RSSI, 159...491, -x dBm, x/70 RSSI, test #
-		                                                    #    [0]    [1]       [2]      [3]      [4]      [5]        [6]       [7]     [8]        [9]
-		if averageResults is False:
-			writer.writerow(truncRow)
-		else:
-			allTruncRows.append(truncRow)
-
+            truncRow = [entry[1], entry[4], entry[7], entry[9], entry[10], entry[11], entry[12], entry[13], entry[14]] 
+                                            #change to [1], [4], [7] to get signal level instead of RSSI (quality)
+		                            #this data is in the format of one of the GREPPED files, with everything in a single
+		                            #row (instead of displayed over three rows), with an additional column appended for the
+		                            #test number
+		                            #Thus, an entry looks like the following:
+		                            #15...223, -x dBm, x/70 RSSI, 278..., -x dBm, x/70 RSSI, 159...491, -x dBm, x/70 RSSI, test #, trial #
+		                            #    [0]    [1]       [2]      [3]      [4]      [5]        [6]       [7]     [8]        [9]    [10]
+            #resultsRow = [entry[11], entry[12], entry[13], entry[14]]
+            allTruncRows.append(truncRow)
+            #allResultsRows.append(resultsRow)
+	    #if averageResults is False:
+            #	writer.writerow(truncRow)
+            #   writer.writerow(resultsRow)
+	    #else:
+	    #   allTruncRows.append(truncRow)
+            #   allResultsRows.append(resultsRow)
+        
+        sortedRows = sorted(allTruncRows, key=operator.itemgetter(3,4)) ##sort based on the 3rd entry first, then the 4th entry
 	if averageResults is False:
-		sys.exit(0)
+            for row in sortedRows:
+                #If you want to verify the rows are in fact in order, use this line
+                #writer.writerow([row[0], row[1], row[2], row[3], row[4]])
+                #Otherwise, use the following line:
+                writer.writerow([row[0], row[1], row[2]])
+                writer.writerow([row[5], row[6], row[7], row[8]])
+	    sys.exit(0)
 	
-        #print (allTruncRows)
-        #list1 = sorted(allTruncRows, key=operator.itemgetter(3,4))
-        #print (list1)
+        
 	#continue on with logic for when we're averaging the results
-	counter = 1
-	summedRow = [int(allTruncRows[0][0]), int(allTruncRows[0][1]), int(allTruncRows[0][2]), int(allTruncRows[0][3])]
-	for prevEntry, entry in zip(allTruncRows, allTruncRows[1:]):
+	counter = 1       #RSSI Value #1             RSSI Value #2          RSSI Value #3            Test #
+	summedRow = [int(sortedRows[0][0]), int(sortedRows[0][1]), int(sortedRows[0][2]), int(sortedRows[0][3])]
+        #Just set the resultsRow to be equal to the first trial...  Not the best approach, but should usually work
+        resultsRow = [int(sortedRows[0][5]), int(sortedRows[0][6]), int(sortedRows[0][7]), int(sortedRows[0][8])]
+	for prevEntry, entry in zip(sortedRows, sortedRows[1:]):
 		#numberOfDigits = len(str(truncRow[3]))
 		if prevEntry[3] == entry[3]:
 			counter += 1
@@ -169,12 +187,16 @@ with open(output, "w") as file:
 			summedRow[1] /= counter
 			summedRow[2] /= counter
 			writer.writerow(summedRow)
+                        writer.writerow(resultsRow)
 			summedRow = [int(entry[0]), int(entry[1]), int(entry[2]), int(entry[3])]
+                        resultsRow = [int(entry[5]), int(entry[6]), int(entry[7]), int(entry[8])]
 			counter = 1
-	if allTruncRows[-1][3] == allTruncRows[-2][3]: #the last row was from the same test as the second to last row
+	if sortedRows[-1][3] == sortedRows[-2][3]: #the last row was from the same test as the second to last row
 		summedRow[0] /= counter
 		summedRow[1] /= counter
 		summedRow[2] /= counter
 		writer.writerow(summedRow)
+                writer.writerow(resultsRow)
 	else: #the last row was a separate test from the second to last row; and thus that last test had only one trial
 		writer.writerow(summedRow)
+                writer.writerow(resultsRow)
